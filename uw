@@ -1,0 +1,61 @@
+#!/usr/bin/env python3.1
+
+import os
+import sys
+import hashlib
+
+# Global variables
+_uw = os.environ['HOME'] + "/.uw"
+_host = _uw + "/host"
+args = sys.argv[1:]
+
+# Verify state
+if not os.path.isdir(_uw):
+    os.mkdir(_uw)
+
+if not os.path.isfile(_host):
+    with open(_host, 'wt') as hostfile:
+        hostfile.write('localhost')
+
+# Function definitions
+
+def host():
+    if len(args) > 0:
+        with open(_host, 'wt') as hostfile:
+            hostfile.write(args[0])
+            return args.pop(0)
+    else:
+        with open(_host, 'rt') as hostfile:
+            return hostfile.readline()
+
+def conn():
+    os.system('ssh -Y' + host())
+
+def rdir():
+    rid = hashlib.sha1(str.encode(os.getcwd())).hexdigest()
+    rfile = _uw + '/' + rid
+    if (len(args) > 0) or (not os.path.isfile(rfile)):
+        dir = args.pop(0)
+        with open(rfile, 'wt') as file: file.write(dir)
+    else:
+        with open(rfile, 'rt') as file: dir = file.readline()
+    return dir
+
+def pull():
+    _rdir = rdir()
+    _host = host()
+    os.system('rsync -r --delete ' + _host + ':' + _rdir + '/. .')
+
+def push():
+    _rdir = rdir()
+    _host = host()
+    os.system('rsync -r --delete . ' + _host + ':' + _rdir)
+
+# Main
+commands = {
+    'host': lambda: print(host()),
+    'connect': conn,
+    'pull': pull,
+    'push': push
+}
+commands.get(args.pop(0), lambda: print("Command not found."))()
