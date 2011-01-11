@@ -19,7 +19,7 @@ if not os.path.isfile(_host):
 
 # Function definitions
 
-def host():
+def host(args = []):
     if len(args) > 0:
         with open(_host, 'wt') as hostfile:
             hostfile.write(args[0])
@@ -31,7 +31,7 @@ def host():
 def conn():
     os.system('ssh -Y' + host())
 
-def rdir():
+def rdir(args = []):
     rid = hashlib.sha1(str.encode(os.getcwd())).hexdigest()
     rfile = _uw + '/' + rid
     if (len(args) > 0) or (not os.path.isfile(rfile)):
@@ -41,21 +41,17 @@ def rdir():
         with open(rfile, 'rt') as file: dir = file.readline()
     return dir
 
-def pull():
-    _rdir = rdir()
-    _host = host()
-    os.system('rsync -r --delete ' + _host + ':' + _rdir + '/. .')
+def pull(args):
+    os.system('rsync -r --delete ' + host() + ':' + rdir(args) + '/. .')
 
-def push():
-    _rdir = rdir()
-    _host = host()
-    os.system('rsync -r --delete . ' + _host + ':' + _rdir)
+def push(args):
+    os.system('rsync -r --delete . ' + host() + ':' + rdir(args))
 
 # Main
 commands = {
-    'host': lambda: print(host()),
+    'host': lambda: print(host(args)),
     'connect': conn,
     'pull': pull,
     'push': push
 }
-commands.get(args.pop(0), lambda: print("Command not found."))()
+commands.get(args.pop(0), lambda args: print("Command not found."))(args)
