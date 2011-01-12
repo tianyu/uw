@@ -4,21 +4,14 @@ import os
 import sys
 import hashlib
 
-# Global variables
-_uw = os.environ['HOME'] + "/.uw"
-_host = _uw + "/host"
-args = sys.argv[1:]
+# Global Variables
 
-# Verify state
-if not os.path.isdir(_uw):
-    os.mkdir(_uw)
+_uw = os.environ['HOME'] + "/.uw"   # The directory where settings are stored
+_host = _uw + "/host"               # The host configuration file
 
-if not os.path.isfile(_host):
-    with open(_host, 'wt') as hostfile:
-        hostfile.write('localhost')
+# Function Definitions
 
-# Function definitions
-
+# Gets or sets the current remote host
 def host(args = []):
     if len(args) > 0:
         with open(_host, 'wt') as hostfile:
@@ -28,30 +21,35 @@ def host(args = []):
         with open(_host, 'rt') as hostfile:
             return hostfile.readline()
 
-def conn():
-    os.system('ssh -Y' + host())
-
+# Gets or sets the current directory's remote directory
 def rdir(args = []):
-    rid = hashlib.sha1(str.encode(os.getcwd())).hexdigest()
-    rfile = _uw + '/' + rid
+    rfile = _uw + '/' + hashlib.sha1(str.encode(os.getcwd())).hexdigest()
     if (len(args) > 0) or (not os.path.isfile(rfile)):
-        dir = args.pop(0)
-        with open(rfile, 'wt') as file: file.write(dir)
+        with open(rfile, 'wt') as file:
+            file.write(args[0])
+            return args.pop(0)
     else:
-        with open(rfile, 'rt') as file: dir = file.readline()
-    return dir
-
-def pull(args):
-    os.system('rsync -r --delete ' + host() + ':' + rdir(args) + '/. .')
-
-def push(args):
-    os.system('rsync -r --delete . ' + host() + ':' + rdir(args))
+        with open(rfile, 'rt') as file:
+            return file.readline()
 
 # Main
+
+# Verify that the settings directory exists
+if not os.path.isdir(_uw):
+    os.mkdir(_uw)
+
+# Verify that the host configuration file exists
+if not os.path.isfile(_host):
+    with open(_host, 'wt') as hostfile:
+        hostfile.write('localhost')
+        
+args = sys.argv[1:] # Obtain a list of arguments.
+
+# The map of commands which may be used as arguments.
 commands = {
     'host': lambda: print(host(args)),
-    'connect': conn,
-    'pull': pull,
-    'push': push
+    'connect': lambda: os.system('ssh -Y ' + host()),
+    'pull': lambda: os.system('rsync -r --delete ' + host() + ':' + rdir(args) + '/. .'),
+    'push': lambda: os.system('rsync -r --delete . ' + host() + ':' + rdir(args))
 }
-commands.get(args.pop(0), lambda args: print("Command not found."))(args)
+commands.get(args.pop(0), lambda: print("Command not found."))()
