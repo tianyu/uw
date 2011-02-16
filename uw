@@ -49,7 +49,7 @@ args = sys.argv[1:] # Obtain a list of arguments.
 commands = {
     'host': lambda: print(host(args)),
     'connect': lambda: os.system('ssh -Y ' + host()),
-    'pull': lambda: os.system('rsync -r --delete ' + host() + ':' + rdir(args) + '/. .'),
-    'push': lambda: os.system('rsync -r --delete . ' + host() + ':' + rdir(args))
+    'pull': lambda: os.system('rsync -rul --delete ' + host() + ':' + rdir(args) + '/. .'),
+    'push': lambda: os.system('rsync -rul --delete . ' + host() + ':' + rdir(args))
 }
 commands.get(args.pop(0), lambda: print("Command not found."))()
